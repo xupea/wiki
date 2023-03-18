@@ -1,0 +1,38 @@
+---
+sidebar_position: 1
+---
+
+# 常见问题
+
+Nodejs开发中常见问题。
+
+## 常见问题
+
+## npm 镜像
+
+源 npm ：
+``` 
+https://registry.npmjs.org/
+```
+
+淘宝 npm 镜像：
+```
+https://registry.npmmirror.com
+```
+
+## nodejs 版本过高
+
+nodejs v17+ 引入。
+
+> Error: error:0308010C:digital envelope routines::unsupported
+
+Windows解决：
+```
+SET NODE_OPTIONS=--openssl-legacy-provider
+```
+
+Mac解决：
+```
+export NODE_OPTIONS=--openssl-legacy-provider
+```
+

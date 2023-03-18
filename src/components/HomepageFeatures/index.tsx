@@ -10,32 +10,29 @@ type FeatureItem = {
 
 const FeatureList: FeatureItem[] = [
   {
-    title: 'Easy to Use',
+    title: '断',
     Svg: require('@site/static/img/undraw_docusaurus_mountain.svg').default,
     description: (
       <>
-        Docusaurus was designed from the ground up to be easily installed and
-        used to get your website up and running quickly.
+        断绝不良的习惯、关系、情感等，改变自己的生活方式和思维方式，使自己能够更好地成长和进步。
       </>
     ),
   },
   {
-    title: 'Focus on What Matters',
+    title: '舍',
     Svg: require('@site/static/img/undraw_docusaurus_tree.svg').default,
     description: (
       <>
-        Docusaurus lets you focus on your docs, and we&apos;ll do the chores. Go
-        ahead and move your docs into the <code>docs</code> directory.
+        放下自己执念的东西，不过分在意过去的不愉快或得失，减轻自己的负担，保持心态平静，关注当下的生活和事情。
       </>
     ),
   },
   {
-    title: 'Powered by React',
+    title: '离',
     Svg: require('@site/static/img/undraw_docusaurus_react.svg').default,
     description: (
       <>
-        Extend or customize your website layout by reusing React. Docusaurus can
-        be extended while reusing the same header and footer.
+        远离不良的人和事，脱离不好的环境，保持自己的独立和自主，使自己能够更好地发展和成长。同时，也可以通过离开某个环境或社交圈来获得新的机会和更广阔的人脉。
       </>
     ),
   },
