@@ -16,3 +16,15 @@ git rebase -i HEAD~3
 ```bash
 git rebase -i [commitid]
 ```
+
+## 远程覆盖本地
+
+```bash
+git reset --hard origin/main
+```
+
+## 修改本地 origin 的地址
+
+```bash
+git remote set-url <remote_name> <remote_url>
+```
