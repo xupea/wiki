@@ -46,6 +46,11 @@ const sidebars = {
     },
     {
       type: 'category',
+      label: '知识累积',
+      items: ['knowledge/server-push'],
+    },
+    {
+      type: 'category',
       label: '其它',
       items: ['other/problems'],
     },

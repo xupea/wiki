@@ -1,0 +1,251 @@
+---
+sidebar_position: 1
+---
+
+## 推送技术 / 服务器推送（Push technology or Server push）
+
+服务器推送是一类特定技术的总称。通常客户端与服务器的交互方式是：客户端发起请求，服务器收到请求返回响应结果，客户端接收响应结果进行处理。从上述的交互过程中可以看出，客户端想要获取数据，需要自主地向服务端发起请求，获取相关数据。
+
+在大多数场景下，客户端通过拉取技术（Pull technology）就可以满足需求。然而，在一些特定场景下，需要服务器主动向客户端推送数据。例如：
+
+- 即时通信
+- 股票财经
+- 服务器性能监控
+
+这类应用有几个重要的特点：较高的实时性，同时客户端无法预期数据的更新周期，服务端生成新的数据时，需要将信息同步给客户端。这类应用场景我们就需要推送技术或服务器推送。
+
+推送技术或服务器推送由来已久，从最初的轮询，到后来的 comet，到长轮询，再到 Server-Send Events，以及实现全双工的 WebSocket。本文会介绍这些技术的基本实现原理以及实现方式，以及具体的功能（手机扫码登录）示例代码实现，来帮助大家迅速了解和掌握推送技术或服务器推送。
+
+本文的客户端指的是浏览器，所有示例代码由 Javascript 编写。
+
+
+
+### 1. 手机扫码登录
+
+扫码登录是服务器推送的经典场景之一。客户端的二维码状态都是由服务端控制的
+
+
+
+### 2. 轮询技术
+
+理论上轮询并不是真正的服务器推送，因为轮询是拉取技术（Pull technology），所以可以理解为是对服务器推送的模拟。轮询分为：短轮询（Polling / Short polling）和长轮询（Long polling）。
+
+
+
+#### 2.1 轮询 或 短轮询 （Polling / Short polling）
+
+轮询是最简单和暴力的方式。
+
+轮询的本质就是创建一个定时器，每隔一定的时间去查询服务端的数据状态，然后根据数据状态进行相应的处理。
+
+##### 2.1.1 请求过程：
+
+1.客户端发送请求
+
+2.服务端立即返回结果
+
+3.客户端检查返回的结果，发现不符合期望
+
+4.客户端会在指定间隔时间后再次发送请求，直到符合期望
+
+##### 2.1.2 代码示例：
+
+```javascript
+function polling() {
+    fetch(url).then(data => {
+        process(data);
+        return;
+    }).catch(err => {
+        return;
+    }).then(() => {
+        setTimeout(polling, 5000);
+    });
+}
+
+polling();
+```
+
+轮询的优点就是简单，容易理解，并不需要考虑额外的异常场景（重连）。
+
+而与此同时，缺点也十分明显。首先，定时轮询的方式在获取数据上存在明显的延迟，想要降低延迟，只能缩短轮询间隔时间；在没有数据更新的情况下，每次轮询都是一次 “浪费” 的请求，对服务端资源也是一种浪费。
+
+因此，轮询的时间间隔需要仔细考量，需要在数据的实时性和服务端的压力之间平衡。
+
+
+
+#### 2.2 长轮询（Long polling）
+
+长轮询是短轮询的一种变体或者改进。客户端不需要一个计时器来间隔轮询，而是依据服务端返回的结果来决定是否继续轮询。（可以简单理解为客户端的计时器移到到服务端中）
+
+
+
+##### 2.2.1 过程：
+
+1.客户端发送请求后，开始等待结果返回
+
+2.服务端不关闭链接，除非有消息要发送
+
+3.当有消息出现，服务端返回结果
+
+4.客户端根据结果，发起新的请求
+
+
+
+##### 2.2.2 示例代码
+
+```javascript
+function polling(params) {
+    fetch(url, params).then(data => {
+        process(data);
+        return;
+    }).catch(err => {
+        return;
+    }).then(() => {
+        polling(newParams);
+    });
+}
+
+polling(params);
+```
+
+长轮询相对短轮询的优点是数据实时性提高，以及降低了对服务端的负担。
+
+缺点是相对于以下技术，还是实时性不够高，最差的情况是 服务器结果返回 + 再次请求返回的时间；客户端需要处理异常场景，如超时和重连。
+
+
+
+### 3. SSE（Server-Sent Events）
+
+严格来说，HTTP协议是无法做到服务器主动推送信息。但是，有一种变通的方法，就是服务器向客户端声明，接下来要发送的是流信息（streaming）。
+
+也即是说，发送的不是一次性的数据包，而是一个数据流，会连续不断地发送过来。这时，客户端不会关闭链接，会一直等着服务器发过来的新的数据流，在线视频播放就是这样的例子。
+
+SSE 就是利用这种机制，使用流信息像客户端推送信息。它基于 HTTP 协议，目前除了 IE 不支持，主流的浏览器都支持。
+
+浏览器提供了 EventSource API 来专门和 SSE 通信，它是 HTML5 标准的一部分，这也使得浏览器来实现与 SSE 通信变得特别的
+
+
+
+##### 3.1 服务端请求返回配置：
+
+```
+Content-Type: text/event-stream
+Cache-Control: no-cache
+Connection: keep-alive
+```
+
+
+
+##### 3.2 服务端发送事件格式：
+
+每一次发送的信息，由若干个`message`组成，每个`message`之间用`\n\n`分隔。每个`message`内部由若干行组成，每一行都是如下格式。
+
+```
+[field]: value\n
+```
+
+上面的`field`可以取四个值。
+
+```javascript
+data
+event
+id
+retry
+```
+
+具体每个字段的使用，可以参照：https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events#event_stream_format
+
+
+
+##### 3.3 客户端示例代码：
+
+```javascript
+const eventSource = new EventSource(url);
+eventSource.onopen = (status) => log(status);
+eventSource.onerror = (error) => log(error);
+eventSource.onmessage = (message) => log(message);
+```
+
+
+
+SSE 的优点是避免了轮询的问题，使用了 HTTP 协议，服务端容易实现和支持，SSE 默认支持断线重连。
+
+SSE 的缺点也是显而易见，它是单向通道，只能服务器向浏览器发送，因为流信息本质上就是下载。如果浏览器向服务器发送信息，就变成了另一次 HTTP 请求。SSE 一般只用来传送文本，二进制数据需要编码后才能传送，且压缩效率不高。IE 不支持 SSE。
+
+总体来讲，SSE 相对于 Websocket，不需要单独的协议，内置重连都减少了开发难度，只是对发送的事件有编码和格式要求而已，几乎是现在服务器推送的技术方案首选。
+
+
+
+### 4. WebSocket
+
+WebSocket 和 HTTP 都是应用层协议，一样都是基于 TCP 的，它是独立在单个 TCP 连接上进行全双工通讯的有状态的协议，适用于需要进行复杂双向数据通信的场景，所以它不仅仅限于服务器推送。
+
+由于 Websocket 也是 HTML5 标准的一部分，所以客户端实现 WebSocket 也是很容易。但是由于其复杂的规范，对于服务器端来说实现难度大，通常都是使用成熟的第三方框架。
+
+
+
+##### 4.1 服务端示例代码：
+
+```
+const { WebSocketServer } = require('ws');
+const wss = new WebSocketServer({
+	port: 8080,
+	perMessageDeflate: {...}
+})
+```
+
+
+
+##### 4.2 客户端示例代码：
+
+```javascript
+let socket = new WebSocket("wss://javascript.info/article/websocket/demo/hello");
+
+socket.onopen = (event) => {};
+
+socket.onmessage = (event) => {};
+
+socket.onclose = (event) => {...};
+
+socket.onerror = (error) => {...};
+```
+
+
+
+Websocket 作为一个独立的应用层协议，具备较少的控制开销（头部），更强的实时性，以及双向通信能力，可以支持更多的应用场景。
+
+Websocket 的缺点也是很明显的，更多体现在非浏览器客户端以及服务端的实现难度高，质量基本依赖于第三库的质量。同时需要处理异常场景，如断线重连，以及心跳维护等。以及还需要了解二进制消息分帧等协议层的概念。
+
+
+
+### 5. Demo：
+
+https://github.com/xupea/server-push-demo
+
+
+
+### 6. 参考：
+
+https://en.wikipedia.org/wiki/Comet_(programming)
+
+https://javascript.info/long-polling
+
+https://www.51cto.com/article/741263.html
+
+https://zhuanlan.zhihu.com/p/444011262
+
+
+
+SSE：
+
+https://html.spec.whatwg.org/multipage/server-sent-events.html
+
+https://www.ruanyifeng.com/blog/2017/05/server-sent_events.html
+
+https://medium.com/trabe/server-sent-events-sse-streams-with-node-and-koa-d9330677f0bf
+
+
+
+Websocket：
+
+https://datatracker.ietf.org/doc/html/rfc6455
