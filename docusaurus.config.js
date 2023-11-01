@@ -78,7 +78,7 @@ const config = {
           },
           {to: '/blog', label: '博客', position: 'left'},
           {
-            href: 'https://github.com/facebook/docusaurus',
+            href: 'https://github.com/xupea/wiki',
             label: 'GitHub',
             position: 'right',
           },
